@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+button:hover {
+    cursor: pointer;
+}
+
+.grid {
+    display: grid;
+    grid-template-rows: repeat(10, 40px);
+    grid-template-columns: repeat(10, 40px);
+    gap: 0.2rem;
+}
