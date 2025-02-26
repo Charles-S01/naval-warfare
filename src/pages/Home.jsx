@@ -10,19 +10,10 @@ export default function Home(params) {
     const [gameIdInput, setGameIdInput] = useState()
     const [errorMsg, setErrorMsg] = useState()
 
-    function handleSubmit(e) {
-        e.preventDefault()
-
-        socket.emit("smt", message)
-        setMessage("")
-    }
-
     async function createGame() {
         const response = await socket.emitWithAck("createGame")
-        const gameId = response.gameId
-        const playerId = response.playerId
-        localStorage.setItem("gameId", gameId)
-        localStorage.setItem("playerId", playerId)
+        localStorage.setItem("gameId", response.gameId)
+        localStorage.setItem("playerId", response.playerId)
         // setId(gameId)
         navigate("/game")
     }

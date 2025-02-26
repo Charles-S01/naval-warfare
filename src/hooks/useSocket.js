@@ -2,7 +2,7 @@ import { useState } from "react"
 import { io } from "socket.io-client"
 
 export default function useSocket(params) {
-    const [gameId, setGameId] = useState()
+    const [game, setGame] = useState()
     const [msg, setMsg] = useState()
     const [isFullGame, setIsFullGame] = useState(false)
     const [userGrid, setUserGrid] = useState([
@@ -20,21 +20,18 @@ export default function useSocket(params) {
 
     const socket = io("http://localhost:3000")
 
-    socket.on("gameId", (gameId) => {
-        setGameId(gameId)
-    })
-
-    socket.on("userJoin", ({ msg, isFullGame }) => {
+    socket.on("userJoin", ({ msg, game }) => {
+        console.log("USER JOINED")
+        console.log(game)
         setMsg(msg)
-        setIsFullGame(isFullGame)
+        setGame(game)
+        localStorage.setItem("game", game)
     })
 
-    const setId = (id) => {
-        setGameId(id)
-    }
+    socket.on("startGame", (game) => {
+        setGame(game)
+        console.log(game)
+    })
 
-    // socket.on('joinFail', (msg) => {
-
-    // })
-    return { socket, gameId, msg, setId, userGrid, isFullGame }
+    return { socket, msg, userGrid, game }
 }
