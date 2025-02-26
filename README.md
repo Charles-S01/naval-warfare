@@ -10,3 +10,5 @@
 * Socket.IO
 * PostgreSQL
 * Prisma ORM
+  
+(In progress)
