@@ -1,4 +1,4 @@
-import { useContext, useState } from "react"
+import { useContext, useMemo, useState } from "react"
 import useSocket from "../hooks/useSocket"
 import { AppContext } from "../App"
 import { useNavigate } from "react-router-dom"
@@ -10,8 +10,12 @@ export default function Home(params) {
     const [gameIdInput, setGameIdInput] = useState()
     const [errorMsg, setErrorMsg] = useState()
 
+    const gameIdStorage = localStorage.getItem("gameId")
+
     async function createGame() {
-        const response = await socket.emitWithAck("createGame")
+        const response = await socket.emitWithAck("createGame", {
+            existingGameId: gameIdStorage ? gameIdStorage : null,
+        })
         localStorage.setItem("gameId", response.gameId)
         localStorage.setItem("playerId", response.playerId)
         // setId(gameId)
@@ -48,18 +52,13 @@ export default function Home(params) {
                             <p className="text-4xl">Start a game</p>
                         </button>
                         <p>Or</p>
-                        <form
-                            onSubmit={joinGame}
-                            className="flex items-end gap-2"
-                        >
+                        <form onSubmit={joinGame} className="flex items-end gap-2">
                             <label className="flex flex-col gap-1">
                                 <p>Join a game with game ID: </p>
                                 <input
                                     placeholder="Game ID"
                                     type="text"
-                                    onChange={(e) =>
-                                        setGameIdInput(e.target.value)
-                                    }
+                                    onChange={(e) => setGameIdInput(e.target.value)}
                                     className="rounded-lg bg-white p-2"
                                 />
                             </label>

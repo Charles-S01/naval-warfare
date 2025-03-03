@@ -5,18 +5,6 @@ export default function useSocket(params) {
     const [game, setGame] = useState()
     const [msg, setMsg] = useState()
     const [isFullGame, setIsFullGame] = useState(false)
-    const [userGrid, setUserGrid] = useState([
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    ])
 
     const socket = io("http://localhost:3000")
 
@@ -33,5 +21,11 @@ export default function useSocket(params) {
         console.log(game)
     })
 
-    return { socket, msg, userGrid, game }
+    socket.on("attackAttempt", (game) => {
+        console.log("Attack attempt")
+        console.log(game)
+        setGame(game)
+    })
+
+    return { socket, msg, game }
 }

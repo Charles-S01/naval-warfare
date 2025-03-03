@@ -8,12 +8,12 @@ import { Outlet } from "react-router-dom"
 export const AppContext = createContext({})
 
 function App() {
-    const { socket, userGrid, game } = useSocket()
+    const { socket, game } = useSocket()
 
     return (
         <>
             <div className="m-0 flex h-full w-full bg-blue-100 p-0">
-                <AppContext.Provider value={{ socket, userGrid, game }}>
+                <AppContext.Provider value={{ socket, game }}>
                     <Outlet />
                 </AppContext.Provider>
             </div>
