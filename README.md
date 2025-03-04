@@ -6,7 +6,7 @@ An online multiplayer board game web application inspired by the classic Battles
 * JavaScript (React.js, Socket.IO)
 * Tailwind CSS
 * HTML
-### Back-end ([seperate repo](https://github.com/Charles-S01/naval-warfare-backend))
+### Back-end ([separate repo](https://github.com/Charles-S01/naval-warfare-backend))
 * JavaScript (Socket.IO, Express.js, Node.js)
 * PostgreSQL
 * Prisma ORM
