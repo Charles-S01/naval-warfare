@@ -1,5 +1,5 @@
 ## Description
-An online multiplayer board game web application inspired by the classic Battleship game. Players can create or join a room where they can play a 1v1 match against others.
+An online multiplayer board game inspired by the classic Battleship game. Players can create or join rooms where they can play a 1v1 match against others.
 
 ## Tech Stack
 ### Front-end
@@ -11,4 +11,5 @@ An online multiplayer board game web application inspired by the classic Battles
 * PostgreSQL
 * Prisma ORM
   
-(Project is in progress)
+## Screenshots
+<img width="1467" alt="Screenshot 2025-03-01 at 10 39 43 PM" src="https://github.com/user-attachments/assets/0cf06b6c-da32-4dc2-8486-8580d11c223f" />
