@@ -3,10 +3,11 @@ export default function Spot({
     col,
     isUserGrid,
     addShipCoord,
-    isShip,
     handleAttackSpot,
-    userSpotAttack,
-    oppSpotAttack,
+    userBoardCoords,
+    oppBoardCoords,
+    userShipCoordsSelection,
+    shipStartEndCoords,
 }) {
     function handleSpotClick() {
         if (isUserGrid) {
@@ -16,21 +17,20 @@ export default function Spot({
         }
     }
 
-    const isUserSpotAttacked = isUserGrid && userSpotAttack
-    const isOppSpotAttacked = !isUserGrid && oppSpotAttack
+    const isShip =
+        userBoardCoords?.some(
+            (coord) => coord.row === row && coord.col === col && coord.shipType,
+        ) ||
+        userShipCoordsSelection.some((el) => el.row === row && el.col === col) ||
+        shipStartEndCoords.some((el) => el.row === row && el.col === col)
 
-    const isUserSpotHit = isUserSpotAttacked && userSpotAttack.type === "HIT"
-    const isUserSpotMiss = isUserSpotAttacked && userSpotAttack.type === "MISS"
-    const isOppSpotHit = isOppSpotAttacked && oppSpotAttack.type === "HIT"
-    const isOppSpotMiss = isOppSpotAttacked && oppSpotAttack.type === "MISS"
+    const userSpotAttack = userBoardCoords.find(
+        (coord) => coord.row === row && coord.col === col && coord.isHit !== null,
+    )
 
-    // if (isUserSpotAttacked) {
-    //     console.log(
-    //         `User board at (${row}, ${col}) is attacked (${userSpotAttack.HIT ? "HIT" : "MISS"})`,
-    //     )
-    // } else if (isOppSpotAttacked) {
-    //     console.log(`Opp board at (${row}, ${col}) is attacked (${oppSpotAttack.HIT ? "HIT" : "MISS"})`)
-    // }
+    const oppSpotAttack = oppBoardCoords.find(
+        (coord) => coord.row === row && coord.col === col && coord.isHit !== null,
+    )
 
     return (
         <>
@@ -40,7 +40,7 @@ export default function Spot({
             >
                 {/* <p>{`${r}, ${c}`}</p> */}
                 <div
-                    className={`${isUserSpotHit ? "bg-red-500" : isUserSpotMiss ? "bg-sky-500" : isOppSpotHit ? "bg-red-500" : isOppSpotMiss ? "bg-sky-500" : null} h-3/5 w-3/5 rounded-4xl`}
+                    className={`${isUserGrid && userSpotAttack?.isHit ? "bg-red-500" : isUserGrid && userSpotAttack && !userSpotAttack.isHit ? "bg-sky-500" : !isUserGrid && oppSpotAttack?.isHit ? "bg-red-500" : !isUserGrid && oppSpotAttack && !oppSpotAttack.isHit ? "bg-sky-500" : null} h-3/5 w-3/5 rounded-4xl`}
                 ></div>
             </div>
         </>

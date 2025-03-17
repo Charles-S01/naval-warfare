@@ -6,9 +6,10 @@ import { useNavigate } from "react-router-dom"
 export default function Game(params) {
     const navigate = useNavigate()
     const { socket, game } = useContext(AppContext)
-    const [shipCoordsSelect, setShipCoordsSelect] = useState([])
+    const [shipStartEndCoords, setShipStartEndCoords] = useState([])
     const [isShipsSubmitted, setIsShipsSubmitted] = useState(false)
-    console.log(shipCoordsSelect)
+    const [canAttack, setCanAttack] = useState(true)
+    // const [shipTypeSelection, setShipTypeSelection] = useState(null)
     const isShipsSet = game && game?.playersReadyCount === 2 ? true : false
 
     const gameId = localStorage.getItem("gameId")
@@ -17,7 +18,9 @@ export default function Game(params) {
     const isGameFull = game && game.Players.length === 2
     const isUserTurn = game && game.playerTurn === playerId
     const isWinner = game && game.winner === playerId
-    const isLoser = game && game.winner !== playerId
+    const isLoser = game && game.winner && game.winner !== playerId
+
+    console.log("start and end selected:", shipStartEndCoords)
 
     const msg = isWinner
         ? "You won"
@@ -44,39 +47,93 @@ export default function Game(params) {
         return { oppId, oppBoardId }
     }, [game])
 
-    // get coordinates for ships and attacks from both boards
-    const { userBoardShip, userBoardAttacks, oppBoardAttacks } = useMemo(() => {
-        let userBoardShip = []
-        let userBoardAttacks = []
-        let oppBoardAttacks = []
+    // ship coords that the user selected
+    const { userShipCoordsSelection, validEndCoords } = useMemo(() => {
+        let userShipCoordsSelection = []
+        let validEndCoords = []
+        if (shipStartEndCoords.length > 0) {
+            const s = shipStartEndCoords[0]
+            if (s.row + 4 < 10) {
+                validEndCoords.push({ row: s.row + 4, col: s.col })
+            }
+            if (s.row - 4 >= 0) {
+                validEndCoords.push({ row: s.row - 4, col: s.col })
+            }
+            if (s.col + 4 < 10) {
+                validEndCoords.push({ row: s.row, col: s.col + 4 })
+            }
+            if (s.col - 4 >= 0) {
+                validEndCoords.push({ row: s.row, col: s.col - 4 })
+            }
+        }
+        console.log("valid end coords:", validEndCoords)
+        if (shipStartEndCoords.length == 2) {
+            const startCoord = shipStartEndCoords[0]
+            const endCoord = shipStartEndCoords[1]
+            // check if endcoord is valid and fill in coords from start to end
+            if (validEndCoords.some((el) => el.row === endCoord.row && el.col === endCoord.col)) {
+                console.log("valid end spot")
+                if (startCoord.row === endCoord.row) {
+                    const startCol = Math.min(startCoord.col, endCoord.col)
+                    const endCol = Math.max(startCoord.col, endCoord.col)
+                    for (let i = startCol; i <= endCol; i++) {
+                        userShipCoordsSelection.push({ row: startCoord.row, col: i })
+                    }
+                } else if (startCoord.col === endCoord.col) {
+                    const startRow = Math.min(startCoord.row, endCoord.row)
+                    const endRow = Math.max(startCoord.row, endCoord.row)
+                    for (let i = startRow; i <= endRow; i++) {
+                        userShipCoordsSelection.push({ row: i, col: startCoord.col })
+                    }
+                }
+            } else {
+                console.log("invalid end spot")
+                setShipStartEndCoords([shipStartEndCoords[0]])
+            }
+        }
+        return { userShipCoordsSelection, validEndCoords }
+    }, [shipStartEndCoords])
+
+    // get coordinates from game instance
+    const { userBoardCoords, oppBoardCoords } = useMemo(() => {
+        let userBoardCoords = []
+        let oppBoardCoords = []
         if (isShipsSet) {
             const player = game.Players.find((p) => p.id === playerId)
             const oppPlayer = game.Players.find((p) => p.id !== playerId)
 
-            userBoardShip = player.gameBoard.Ships ? player.gameBoard.Ships[0].Coordinates : []
-            userBoardAttacks = player.gameBoard.Attacks ? player.gameBoard.Attacks : []
-            oppBoardAttacks = oppPlayer.gameBoard.Attacks ? oppPlayer.gameBoard.Attacks : []
+            userBoardCoords = player.gameBoard.Coordinates
+            oppBoardCoords = oppPlayer.gameBoard.Coordinates
         }
-        return { userBoardShip, userBoardAttacks, oppBoardAttacks }
+        return { userBoardCoords, oppBoardCoords }
     }, [game])
 
     function addShipCoord({ row, col }) {
-        if (!isShipsSet && shipCoordsSelect.length < 1) {
+        if (!isShipsSet && shipStartEndCoords.length < 2) {
             console.log(`Added ship at (${row}, ${col})`)
-            setShipCoordsSelect([...shipCoordsSelect, { row, col }])
+            setShipStartEndCoords([...shipStartEndCoords, { row, col }])
         }
     }
 
     function submitShipCoords() {
-        if (!isShipsSet || !isShipsSubmitted) {
+        if (!isShipsSet || (!isShipsSubmitted && shipStartEndCoords.length > 0)) {
             setIsShipsSubmitted(true)
-            socket.emit("placeShips", { gameId, playerId, shipCoordsSelect })
+            socket.emit("placeShips", { gameId, playerId, userShipCoordsSelection })
         }
     }
 
-    function handleAttackSpot({ row, col }) {
-        if (isShipsSet && isUserTurn && !(isWinner || isLoser)) {
-            socket.emit("attackSpot", { gameId, playerId, oppId, oppBoardId, row, col })
+    async function handleAttackSpot({ row, col }) {
+        if (isShipsSet && isUserTurn && !(isWinner || isLoser) && canAttack) {
+            setCanAttack(false)
+            const response = await socket.emitWithAck("attackSpot", {
+                gameId,
+                playerId,
+                oppId,
+                oppBoardId,
+                row,
+                col,
+            })
+            setCanAttack(true)
         }
     }
 
@@ -84,29 +141,18 @@ export default function Game(params) {
         const spots = []
         for (let r = 0; r < 10; r++) {
             for (let c = 0; c < 10; c++) {
-                let isShip = false
-                if (true) {
-                    isShip =
-                        // userBoardShip.some((el) => el.row === r && el.col === c) ||
-                        shipCoordsSelect.some((el) => el.row === r && el.col === c)
-                }
-                let oppSpotAttack = null
-                let userSpotAttack = null
-                if (isUserGrid) {
-                    userSpotAttack = userBoardAttacks.find((el) => el.row === r && el.col === c)
-                } else {
-                    oppSpotAttack = oppBoardAttacks.find((el) => el.row === r && el.col === c)
-                }
                 spots.push(
                     <>
                         <Spot
+                            key={{ r, c }}
                             row={r}
                             col={c}
                             isUserGrid={isUserGrid}
-                            isShip={isShip}
                             addShipCoord={addShipCoord}
-                            userSpotAttack={userSpotAttack}
-                            oppSpotAttack={oppSpotAttack}
+                            userBoardCoords={userBoardCoords}
+                            oppBoardCoords={oppBoardCoords}
+                            userShipCoordsSelection={userShipCoordsSelection}
+                            shipStartEndCoords={shipStartEndCoords}
                             handleAttackSpot={handleAttackSpot}
                         />
                     </>,
@@ -128,7 +174,7 @@ export default function Game(params) {
 
     return (
         <>
-            <div className="flex h-full w-full flex-col">
+            <div className="page box-border flex h-full w-full flex-col gap-4 overflow-auto">
                 <div className="id flex flex-col p-4">
                     <p>Game ID:</p>
                     <p>{gameId && gameId}</p>
@@ -146,19 +192,32 @@ export default function Game(params) {
                                     <strong>YOUR FLEET</strong>
                                 </p>
                                 <div className="grid">{renderGrid({ isUserGrid: true })}</div>
-                                <div className="ships flex">
-                                    <div className="">
-                                        {!isShipsSubmitted ? (
-                                            <>
-                                                <button
-                                                    onClick={submitShipCoords}
-                                                    className="rounded-lg bg-green-500 p-2 text-white"
-                                                >
-                                                    <strong>Done</strong>
-                                                </button>
-                                            </>
-                                        ) : null}
-                                    </div>
+                                <div className="ships flex gap-2 text-white">
+                                    {/* <div className="text-white"> */}
+                                    {!isShipsSubmitted ? (
+                                        <>
+                                            <button
+                                                onClick={submitShipCoords}
+                                                className="rounded-lg bg-green-500 p-2 text-white"
+                                            >
+                                                <strong>Done</strong>
+                                            </button>
+                                        </>
+                                    ) : null}
+                                    {/* {
+                                        <>
+                                            <button className="rounded-lg bg-gray-500 p-2">
+                                                Carrier
+                                            </button>
+                                            <button className="rounded-lg bg-gray-500 p-2">
+                                                Submarine
+                                            </button>
+                                            <button className="rounded-lg bg-gray-500 p-2">
+                                                Destroyer
+                                            </button>
+                                        </>
+                                    } */}
+                                    {/* </div> */}
                                 </div>
                             </div>
 
@@ -167,11 +226,7 @@ export default function Game(params) {
                                     <strong>OPPONENT'S FLEET</strong>
                                 </p>
                                 <div className="grid">{renderGrid({ isUserGrid: false })}</div>
-                                <div className="ships flex">
-                                    {/* <div className="rounded-lg border-2 border-gray-400 bg-gray-200 p-1">
-                                        <button>Ship</button>
-                                    </div> */}
-                                </div>
+                                <div className="ships flex"></div>
                             </div>
                         </div>
                     </>

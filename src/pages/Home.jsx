@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom"
 
 export default function Home(params) {
     const navigate = useNavigate()
-    const { socket, setId } = useContext(AppContext)
+    const { socket } = useContext(AppContext)
     const [message, setMessage] = useState()
     const [gameIdInput, setGameIdInput] = useState()
     const [errorMsg, setErrorMsg] = useState()
@@ -18,7 +18,6 @@ export default function Home(params) {
         })
         localStorage.setItem("gameId", response.gameId)
         localStorage.setItem("playerId", response.playerId)
-        // setId(gameId)
         navigate("/game")
     }
 
@@ -43,13 +42,13 @@ export default function Home(params) {
     return (
         <>
             <div className="m-0 flex h-full w-full items-center justify-center p-0">
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 p-4">
                     <div className="box flex flex-col items-center gap-4">
                         <button
                             onClick={createGame}
-                            className="rounded-lg bg-blue-500 p-2 text-white"
+                            className="rounded-lg bg-green-500 p-2 text-white"
                         >
-                            <p className="text-4xl">Start a game</p>
+                            <p className="text-3xl">Start a game</p>
                         </button>
                         <p>Or</p>
                         <form onSubmit={joinGame} className="flex items-end gap-2">
@@ -66,7 +65,7 @@ export default function Home(params) {
                                 Enter
                             </button>
                         </form>
-                        <p>{errorMsg && errorMsg}</p>
+                        <p className="text-red-500">{errorMsg && errorMsg}</p>
                     </div>
                 </div>
             </div>

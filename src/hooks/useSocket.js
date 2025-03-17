@@ -3,29 +3,41 @@ import { io } from "socket.io-client"
 
 export default function useSocket(params) {
     const [game, setGame] = useState()
-    const [msg, setMsg] = useState()
-    const [isFullGame, setIsFullGame] = useState(false)
 
-    const socket = io("http://localhost:3000")
+    const socketUrl = import.meta.env.VITE_SOCKET_URL
+    const socket = io(socketUrl, {
+        auth: {
+            serverOffset: 0,
+            // gameId: null,
+        },
+    })
 
-    socket.on("userJoin", ({ msg, game }) => {
+    socket.on("connection", () => {
+        console.log("Connected to socket", socket.id)
+    })
+
+    socket.on("disconnect", () => {
+        console.log("Disconnected from socket", socket.id)
+    })
+
+    socket.on("userJoin", ({ game }) => {
         console.log("USER JOINED")
         console.log(game)
-        setMsg(msg)
         setGame(game)
-        localStorage.setItem("game", game)
     })
 
     socket.on("startGame", (game) => {
         setGame(game)
+        // socket.auth.gameId = game.id
+        console.log("start game")
         console.log(game)
     })
 
     socket.on("attackAttempt", (game) => {
         console.log("Attack attempt")
-        console.log(game)
+        // console.log(game)
         setGame(game)
     })
 
-    return { socket, msg, game }
+    return { socket, game }
 }
