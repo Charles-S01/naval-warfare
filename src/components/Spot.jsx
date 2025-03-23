@@ -8,6 +8,8 @@ export default function Spot({
     oppBoardCoords,
     userShipCoordsSelection,
     shipStartEndCoords,
+    validEndCoords,
+    isShipsSubmitted,
 }) {
     function handleSpotClick() {
         if (isUserGrid) {
@@ -32,11 +34,13 @@ export default function Spot({
         (coord) => coord.row === row && coord.col === col && coord.isHit !== null,
     )
 
+    const isValidEndCoord = validEndCoords.find((el) => el.row === row && el.col === col)
+
     return (
         <>
             <div
                 onClick={handleSpotClick}
-                className={`${isUserGrid && isShip ? "bg-zinc-400" : "bg-sky-200"} flex items-center justify-center hover:cursor-pointer hover:brightness-90`}
+                className={`${isUserGrid && isShip ? "bg-zinc-400" : isUserGrid && !isShipsSubmitted && isValidEndCoord ? "bg-zinc-200" : "bg-sky-200"} flex items-center justify-center hover:cursor-pointer hover:brightness-90`}
             >
                 {/* <p>{`${r}, ${c}`}</p> */}
                 <div
