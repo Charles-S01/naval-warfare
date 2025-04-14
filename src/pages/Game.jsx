@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom"
 
 export default function Game(params) {
     const navigate = useNavigate()
-    const { socket, game, retrieveGame, setGame } = useContext(AppContext)
+    const { stompClient, game, retrieveGame, placeShip, deleteGame } = useContext(AppContext)
     const [shipStartEndCoords, setShipStartEndCoords] = useState([])
     const [didUserClickSubmitShip, setDidUserClickSubmitShip] = useState(false)
     const [canAttack, setCanAttack] = useState(true)
@@ -19,27 +19,34 @@ export default function Game(params) {
                 if (!gameFromRetrieve) {
                     navigate("/")
                 }
+            } else {
+                navigate("/")
             }
         }
         if (!game) {
             getGame()
         }
-    }, [])
+    }, [game])
 
     const gameId = game?.id
     const playerId = localStorage.getItem("playerId")
 
-    const isGameFull = game && game.Players.length === 2
+    const isGameFull = game && game.players.length === 2
 
-    const isUserTurn = game && game.playerTurn === playerId
-    const isWinner = game && game.winner === playerId
-    const isLoser = game && game.winner && game.winner !== playerId
+    const isUserTurn = game && game.playerTurnId === playerId
+    const isWinner = game && game.winnerId === playerId
+    const isLoser = game && game.winnerId && game.winnerId !== playerId
 
-    const isAllPlayersShipsReady = game && game?.playersReadyCount === 2 ? true : false
+    const isAllPlayersShipsReady =
+        game &&
+        game?.players[0].gameboard.ships.length > 0 &&
+        game?.players[1].gameboard.ships.length > 0
+            ? true
+            : false
 
     const { isUserShipReady } = useMemo(() => {
-        const user = game?.Players.find((p) => p.id === playerId)
-        const isUserShipReady = user?.gameBoard?.Ships.length === 1
+        const user = game?.players.find((p) => p.id === playerId)
+        const isUserShipReady = user?.gameboard?.ships.length === 1
         return { isUserShipReady }
     }, [game])
 
@@ -63,9 +70,9 @@ export default function Game(params) {
         let oppId = null
         let oppBoardId = null
         if (isGameFull) {
-            const oppPlayer = game.Players.find((p) => p.id !== playerId)
+            const oppPlayer = game.players.find((p) => p.id !== playerId)
             oppId = oppPlayer.id
-            oppBoardId = oppPlayer.gameBoard.id
+            oppBoardId = oppPlayer.gameboard.id
         }
         return { oppId, oppBoardId }
     }, [game])
@@ -96,17 +103,26 @@ export default function Game(params) {
             // check if endcoord is valid and fill in coords from start to end
             if (validEndCoords.some((el) => el.row === endCoord.row && el.col === endCoord.col)) {
                 // console.log("valid end spot")
+                const gameboard = game.players.find((p) => p.id === playerId).gameboard
                 if (startCoord.row === endCoord.row) {
                     const startCol = Math.min(startCoord.col, endCoord.col)
                     const endCol = Math.max(startCoord.col, endCoord.col)
                     for (let i = startCol; i <= endCol; i++) {
-                        userShipCoordsSelection.push({ row: startCoord.row, col: i })
+                        userShipCoordsSelection.push({
+                            row: startCoord.row,
+                            col: i,
+                            // shipType: "CARRIER",
+                        })
                     }
                 } else if (startCoord.col === endCoord.col) {
                     const startRow = Math.min(startCoord.row, endCoord.row)
                     const endRow = Math.max(startCoord.row, endCoord.row)
                     for (let i = startRow; i <= endRow; i++) {
-                        userShipCoordsSelection.push({ row: i, col: startCoord.col })
+                        userShipCoordsSelection.push({
+                            row: i,
+                            col: startCoord.col,
+                            // shipType: "CARRIER",
+                        })
                     }
                 }
             } else {
@@ -122,11 +138,11 @@ export default function Game(params) {
         let userBoardCoords = []
         let oppBoardCoords = []
         if (isAllPlayersShipsReady) {
-            const player = game.Players.find((p) => p.id === playerId)
-            const oppPlayer = game.Players.find((p) => p.id !== playerId)
+            const player = game.players.find((p) => p.id === playerId)
+            const oppPlayer = game.players.find((p) => p.id !== playerId)
 
-            userBoardCoords = player.gameBoard?.Coordinates
-            oppBoardCoords = oppPlayer.gameBoard?.Coordinates
+            userBoardCoords = player.gameboard?.coordinates
+            oppBoardCoords = oppPlayer.gameboard?.coordinates
         }
         return { userBoardCoords, oppBoardCoords }
     }, [game])
@@ -142,25 +158,16 @@ export default function Game(params) {
         if (!didUserClickSubmitShip && !isUserShipReady && shipStartEndCoords.length === 2) {
             // console.log("submitShipCoords")
             setDidUserClickSubmitShip(true)
-            const response = await socket.emitWithAck("placeShips", {
-                gameId,
-                playerId,
-                userShipCoordsSelection,
-            })
-            setGame(response.game)
+            await placeShip({ gameId, playerId, coords: userShipCoordsSelection })
         }
     }
 
     async function handleAttackSpot({ row, col }) {
         if (isAllPlayersShipsReady && isUserTurn && !(isWinner || isLoser) && canAttack) {
             setCanAttack(false)
-            const response = await socket.emitWithAck("attackSpot", {
-                gameId,
-                playerId,
-                oppId,
-                oppBoardId,
-                row,
-                col,
+            await stompClient.publish({
+                destination: "/app/attack",
+                body: JSON.stringify({ row, col, gameId, playerId, oppId }),
             })
             setCanAttack(true)
         }
@@ -193,16 +200,11 @@ export default function Game(params) {
         return spots
     }
 
-    function endGame() {
-        socket.emit("endGame", gameId)
+    async function endGame() {
+        await deleteGame(gameId)
         localStorage.setItem("isReloaded", true)
         navigate("/")
     }
-
-    socket.on("endGame", () => {
-        console.log("game ended")
-        navigate("/")
-    })
 
     return (
         <>
@@ -216,7 +218,7 @@ export default function Game(params) {
                         <strong>{msg}</strong>
                     </p>
                 </div>
-                {game?.Players.length === 2 && (
+                {game?.players.length === 2 && (
                     <>
                         <div className="game-area mt-10 flex flex-1 items-baseline justify-evenly gap-8">
                             <div className="user-fleet flex flex-col gap-10">

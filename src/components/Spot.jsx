@@ -20,18 +20,16 @@ export default function Spot({
     }
 
     const isShip =
-        userBoardCoords?.some(
-            (coord) => coord.row === row && coord.col === col && coord.shipType,
-        ) ||
+        userBoardCoords?.some((coord) => coord.row === row && coord.col === col && coord.ship) ||
         userShipCoordsSelection.some((el) => el.row === row && el.col === col) ||
         shipStartEndCoords.some((el) => el.row === row && el.col === col)
 
     const userSpotAttack = userBoardCoords.find(
-        (coord) => coord.row === row && coord.col === col && coord.isHit !== null,
+        (coord) => coord.row === row && coord.col === col && coord.attackResult !== null,
     )
 
     const oppSpotAttack = oppBoardCoords.find(
-        (coord) => coord.row === row && coord.col === col && coord.isHit !== null,
+        (coord) => coord.row === row && coord.col === col && coord.attackResult !== null,
     )
 
     const isValidEndCoord = validEndCoords.find((el) => el.row === row && el.col === col)
@@ -44,7 +42,7 @@ export default function Spot({
             >
                 {/* <p>{`${r}, ${c}`}</p> */}
                 <div
-                    className={`${isUserGrid && userSpotAttack?.isHit ? "bg-red-500" : isUserGrid && userSpotAttack && !userSpotAttack.isHit ? "bg-sky-500" : !isUserGrid && oppSpotAttack?.isHit ? "bg-red-500" : !isUserGrid && oppSpotAttack && !oppSpotAttack.isHit ? "bg-sky-500" : null} h-3/5 w-3/5 rounded-4xl`}
+                    className={`${isUserGrid && userSpotAttack?.attackResult === "HIT" ? "bg-red-500" : isUserGrid && userSpotAttack?.attackResult === "MISS" ? "bg-sky-500" : !isUserGrid && oppSpotAttack?.attackResult === "HIT" ? "bg-red-500" : !isUserGrid && oppSpotAttack?.attackResult === "MISS" ? "bg-sky-500" : null} h-3/5 w-3/5 rounded-4xl`}
                 ></div>
             </div>
         </>

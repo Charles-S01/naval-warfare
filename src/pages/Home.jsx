@@ -2,10 +2,11 @@ import { useContext, useEffect, useMemo, useState } from "react"
 import useSocket from "../hooks/useSocket"
 import { AppContext } from "../App"
 import { useNavigate } from "react-router-dom"
+import { v4 as uuidv4 } from "uuid"
 
 export default function Home(params) {
     const navigate = useNavigate()
-    const { socket, game } = useContext(AppContext)
+    const { game, stompClient, createGame, joinGame, deleteGame } = useContext(AppContext)
     const [gameIdInput, setGameIdInput] = useState()
     const [errorMsg, setErrorMsg] = useState()
     const [canClickButton, setCanClickButton] = useState(true)
@@ -14,47 +15,37 @@ export default function Home(params) {
 
     useEffect(() => {
         const isReloaded = localStorage.getItem("isReloaded")
-        if (!isReloaded) {
+        async function del(params) {
             localStorage.setItem("isReloaded", true)
             const storageGameId = localStorage.getItem("gameId")
             if (game || storageGameId) {
-                socket.emit("endGame", game ? game.id : storageGameId)
+                console.log("game or storageGameId found, deleting game...")
+                await deleteGame(game ? game.id : storageGameId)
                 localStorage.removeItem("gameId")
             }
             window.location.reload()
         }
+        if (!isReloaded) {
+            del()
+        }
     }, [])
 
-    async function createGame() {
-        if (canClickButton) {
-            setCanClickButton(false)
-            const response = await socket.emitWithAck("createGame", {})
-            localStorage.setItem("gameId", response.gameId)
-            localStorage.setItem("playerId", response.playerId)
-            setCanClickButton(true)
+    async function makeGame(params) {
+        if (await createGame()) {
+            console.log("Created game")
             navigate("/game")
+        } else {
+            setErrorMsg("Error creating game")
         }
     }
 
-    async function joinGame(e) {
-        if (canClickButton) {
-            e.preventDefault()
-            setCanClickButton(false)
-            try {
-                const response = await socket.emitWithAck("joinGame", {
-                    gameIdInput,
-                })
-                if (response.joined) {
-                    localStorage.setItem("gameId", response.gameId)
-                    localStorage.setItem("playerId", response.playerId)
-                    navigate("/game")
-                } else {
-                    setErrorMsg(response.errorMsg)
-                }
-            } catch (error) {
-                console.log(error)
-            }
-            setCanClickButton(true)
+    async function join(e) {
+        e.preventDefault()
+        if (await joinGame(gameIdInput)) {
+            console.log("Joined game")
+            navigate("/game")
+        } else {
+            setErrorMsg("Cannot join game")
         }
     }
 
@@ -69,13 +60,13 @@ export default function Home(params) {
                         className={`${!canClickButton && "brightness-75"} box flex flex-col items-center gap-4 rounded-xl border-4 border-sky-300 bg-white p-5 shadow-2xl`}
                     >
                         <button
-                            onClick={createGame}
+                            onClick={makeGame}
                             className="rounded-lg border-2 border-sky-700 p-2 text-sky-700 hover:bg-sky-700 hover:text-white"
                         >
                             <p className="text-3xl">Start a new game</p>
                         </button>
                         <p className="font-bold">Or</p>
-                        <form onSubmit={joinGame} className="flex items-end gap-2">
+                        <form onSubmit={join} className="flex items-end gap-2">
                             <label className="flex flex-col gap-1">
                                 <p>Join a game with game ID: </p>
                                 <input
@@ -100,6 +91,11 @@ export default function Home(params) {
                             <p>Loading...</p>
                         </>
                     )}
+                    <div>
+                        {/* <button onClick={makeGame}>
+                            <p>Test button</p>
+                        </button> */}
+                    </div>
                 </div>
             </div>
         </>
