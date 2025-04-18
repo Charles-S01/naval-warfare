@@ -7,7 +7,7 @@ An online multiplayer board game similar to Battleship.
 # ⭐️ Features
 - Create a lobby or join a lobby using a unique game ID to play 1v1 matches against others
 - Real-time multiplayer gameplay via WebSocket communication between client and server for event-driven game synchronization
-- Persist game state in a database so users can continue playing their match in case of connection loss
+- Games are persisted in a database so users can continue playing their match in case of connection loss
 
 # 💻 Tech Stack
 ### Frontend
