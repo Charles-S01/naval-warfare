@@ -5,10 +5,9 @@ import { useNavigate } from "react-router-dom"
 
 export default function Game(params) {
     const navigate = useNavigate()
-    const { stompClient, game, retrieveGame, placeShip, deleteGame } = useContext(AppContext)
+    const { game, retrieveGame, placeShip, deleteGame, attack, canAttack } = useContext(AppContext)
     const [shipStartEndCoords, setShipStartEndCoords] = useState([])
     const [didUserClickSubmitShip, setDidUserClickSubmitShip] = useState(false)
-    const [canAttack, setCanAttack] = useState(true)
 
     useEffect(() => {
         localStorage.removeItem("isReloaded")
@@ -164,12 +163,7 @@ export default function Game(params) {
 
     async function handleAttackSpot({ row, col }) {
         if (isAllPlayersShipsReady && isUserTurn && !(isWinner || isLoser) && canAttack) {
-            setCanAttack(false)
-            await stompClient.publish({
-                destination: "/app/attack",
-                body: JSON.stringify({ row, col, gameId, playerId, oppId }),
-            })
-            setCanAttack(true)
+            attack({ row, col, gameId, playerId, oppId })
         }
     }
 
@@ -231,6 +225,7 @@ export default function Game(params) {
                                     {!isUserShipReady && (
                                         <>
                                             <button
+                                                disabled={isUserShipReady || didUserClickSubmitShip}
                                                 onClick={submitShipCoords}
                                                 className={`rounded-lg border-2 border-green-600 p-2 text-green-600 hover:bg-green-600 hover:text-white`}
                                             >

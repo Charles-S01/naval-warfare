@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from "uuid"
 
 export default function Home(params) {
     const navigate = useNavigate()
-    const { game, stompClient, createGame, joinGame, deleteGame } = useContext(AppContext)
+    const { game, createGame, joinGame, deleteGame } = useContext(AppContext)
     const [gameIdInput, setGameIdInput] = useState()
     const [errorMsg, setErrorMsg] = useState()
     const [canClickButton, setCanClickButton] = useState(true)
@@ -15,7 +15,7 @@ export default function Home(params) {
 
     useEffect(() => {
         const isReloaded = localStorage.getItem("isReloaded")
-        async function del(params) {
+        async function del() {
             localStorage.setItem("isReloaded", true)
             const storageGameId = localStorage.getItem("gameId")
             if (game || storageGameId) {
@@ -31,21 +31,31 @@ export default function Home(params) {
     }, [])
 
     async function makeGame(params) {
-        if (await createGame()) {
-            console.log("Created game")
-            navigate("/game")
-        } else {
-            setErrorMsg("Error creating game")
+        if (canClickButton) {
+            setCanClickButton(false)
+            const createdGame = await createGame()
+            if (createdGame) {
+                console.log("Created game")
+                navigate("/game")
+            } else {
+                setErrorMsg("Error creating game")
+            }
+            setCanClickButton(true)
         }
     }
 
     async function join(e) {
-        e.preventDefault()
-        if (await joinGame(gameIdInput)) {
-            console.log("Joined game")
-            navigate("/game")
-        } else {
-            setErrorMsg("Cannot join game")
+        if (canClickButton) {
+            e.preventDefault()
+            setCanClickButton(false)
+            const joinedGame = await joinGame(gameIdInput)
+            if (joinedGame) {
+                console.log("Joined game")
+                navigate("/game")
+            } else {
+                setErrorMsg("Game is full or does not exist")
+            }
+            setCanClickButton(true)
         }
     }
 
@@ -57,9 +67,10 @@ export default function Home(params) {
                 </header>
                 <div className="main flex flex-auto flex-col items-center justify-center gap-4 p-4">
                     <div
-                        className={`${!canClickButton && "brightness-75"} box flex flex-col items-center gap-4 rounded-xl border-4 border-sky-300 bg-white p-5 shadow-2xl`}
+                        className={`${!canClickButton && "brightness-90"} box flex flex-col items-center gap-4 rounded-xl border-4 border-sky-300 bg-white p-5 shadow-2xl`}
                     >
                         <button
+                            disabled={!canClickButton}
                             onClick={makeGame}
                             className="rounded-lg border-2 border-sky-700 p-2 text-sky-700 hover:bg-sky-700 hover:text-white"
                         >
@@ -76,7 +87,10 @@ export default function Home(params) {
                                     className="rounded-lg bg-gray-100 p-2"
                                 />
                             </label>
-                            <button className="rounded-lg p-2 text-sky-700 hover:cursor-pointer hover:bg-sky-100">
+                            <button
+                                disabled={!canClickButton}
+                                className="rounded-lg p-2 text-sky-700 hover:cursor-pointer hover:bg-sky-100"
+                            >
                                 Enter
                             </button>
                         </form>

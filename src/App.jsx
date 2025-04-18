@@ -9,8 +9,17 @@ import useWebSocket from "./hooks/useWebSocket"
 export const AppContext = createContext({})
 
 function App() {
-    const { stompClient, game, retrieveGame, createGame, joinGame, placeShip, deleteGame } =
-        useWebSocket()
+    const {
+        stompClient,
+        game,
+        retrieveGame,
+        createGame,
+        joinGame,
+        placeShip,
+        deleteGame,
+        attack,
+        canAttack,
+    } = useWebSocket()
 
     return (
         <>
@@ -24,6 +33,8 @@ function App() {
                         joinGame,
                         placeShip,
                         deleteGame,
+                        attack,
+                        canAttack,
                     }}
                 >
                     <Outlet />

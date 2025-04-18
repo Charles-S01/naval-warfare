@@ -7,6 +7,7 @@ import axiosInstance from "../axios/axiosInstance"
 export default function useWebSocket(params) {
     const [game, setGame] = useState()
     const [gameId, setGameId] = useState(() => game?.id || localStorage.getItem("gameId"))
+    const [canAttack, setCanAttack] = useState(true)
 
     console.log("game state:", game)
 
@@ -36,8 +37,19 @@ export default function useWebSocket(params) {
             localStorage.removeItem("gameId")
             setGame(null)
         } else {
+            setCanAttack(true)
             setGame(body.game)
         }
+    }
+
+    function attack({ row, col, gameId, playerId, oppId }) {
+        if (canAttack) {
+            stompClient.publish({
+                destination: "/app/attack",
+                body: JSON.stringify({ row, col, gameId, playerId, oppId }),
+            })
+        }
+        setCanAttack(false)
     }
 
     async function createGame() {
@@ -114,5 +126,7 @@ export default function useWebSocket(params) {
         joinGame,
         placeShip,
         deleteGame,
+        attack,
+        canAttack,
     }
 }
