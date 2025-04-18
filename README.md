@@ -1,12 +1,12 @@
 # 🎮 Naval Warfare Game
 ### Live website link in "about" section
 
-# Description
-An online multiplayer board game similar to Battleship.
+## Description
+An online multiplayer board game similar to Battleship. Players place ships on their board and attempt to sink opponent ships with strategic attacks.
 
 # ⭐️ Features
-- Create a lobby or join a lobby using a unique game ID to play 1v1 matches against others
 - Real-time multiplayer gameplay via WebSocket communication between client and server for event-driven game synchronization
+- Create a lobby or join a lobby using a unique game ID and play 1v1 matches against others
 - Games are persisted in a database so users can continue playing their match in case of connection loss
 
 # 💻 Tech Stack
